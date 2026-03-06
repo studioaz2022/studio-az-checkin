@@ -54,7 +54,7 @@ type Step =
 
 export default function BarbershopAppointmentScreen() {
   const { navigate, resetToHome, goBack } = useScreen();
-  const { keyboardStyle } = useKeyboardAware();
+  useKeyboardAware();
   const carouselRef = useRef<HTMLDivElement>(null);
 
   const [step, setStep] = useState<Step>('select');
@@ -836,7 +836,7 @@ export default function BarbershopAppointmentScreen() {
 
       {/* ───────── PHONE LOOKUP ───────── */}
       {step === 'phone' && selectedBarber && (
-        <div className="flex-1 flex flex-col items-center justify-center w-full max-w-lg px-6 animate-scale-in" style={keyboardStyle}>
+        <div className="flex-1 flex flex-col items-center justify-center w-full max-w-lg px-6 animate-scale-in">
           <div className="text-center mb-10">
             <h1 className="text-3xl font-bold tracking-tight mb-2" style={{ fontFamily: "'Outfit', sans-serif" }}>
               <span className="text-gold-gradient">Let&apos;s Find You</span>
@@ -941,7 +941,7 @@ export default function BarbershopAppointmentScreen() {
 
       {/* ───────── NAME FALLBACK ───────── */}
       {step === 'name_fallback' && selectedBarber && (
-        <div className="flex-1 flex flex-col items-center justify-center w-full max-w-lg px-6 animate-scale-in" style={keyboardStyle}>
+        <div className="flex-1 flex flex-col items-center justify-center w-full max-w-lg px-6 animate-scale-in">
           <div className="text-center mb-10">
             <h1 className="text-3xl font-bold tracking-tight mb-2" style={{ fontFamily: "'Outfit', sans-serif" }}>
               <span className="text-gold-gradient">What&apos;s your name?</span>

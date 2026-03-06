@@ -28,7 +28,7 @@ type Step =
 
 export default function TattooScreen() {
   const { navigate, goBack } = useScreen();
-  const { keyboardStyle } = useKeyboardAware();
+  useKeyboardAware();
   const carouselRef = useRef<HTMLDivElement>(null);
 
   const [step, setStep] = useState<Step>('select');
@@ -698,7 +698,7 @@ export default function TattooScreen() {
 
       {/* ───────── NAME FALLBACK ───────── */}
       {step === 'name_fallback' && selectedArtist && (
-        <div className="flex-1 flex flex-col items-center justify-center w-full max-w-lg px-6 animate-scale-in" style={keyboardStyle}>
+        <div className="flex-1 flex flex-col items-center justify-center w-full max-w-lg px-6 animate-scale-in">
           <div className="w-full space-y-6">
             <input
               type="text"
