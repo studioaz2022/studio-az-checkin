@@ -90,6 +90,7 @@ export default function BarbershopAppointmentScreen() {
     contactId?: string;
     appointmentDate?: string;
     appointment?: { id: string; contactId: string; contactName: string; startTime: string; endTime: string };
+    lastAppointment?: { startTime: string; endTime: string };
   } | null>(null);
 
   // Name fallback state
@@ -335,6 +336,7 @@ export default function BarbershopAppointmentScreen() {
         contactId: result.contactId || result.appointment?.contactId,
         appointmentDate: result.appointment?.startTime,
         appointment: result.appointment,
+        lastAppointment: result.lastAppointment,
       });
       setStep('phone_result');
     } catch (err) {
@@ -903,17 +905,26 @@ export default function BarbershopAppointmentScreen() {
               <div className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6"
                 style={{ background: 'rgba(251, 191, 36, 0.1)', border: '2px solid rgba(251, 191, 36, 0.3)' }}>
                 <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="12" cy="12" r="10" /><path d="M8 15h8" /><line x1="9" y1="9" x2="9.01" y2="9" /><line x1="15" y1="9" x2="15.01" y2="9" />
+                  <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" />
                 </svg>
               </div>
-              <h2 className="text-2xl font-bold text-center mb-2" style={{ fontFamily: "'Outfit', sans-serif" }}>No Appointment Found</h2>
-              <p className="text-[var(--muted)] text-center text-lg mb-8">
-                Hi <span className="text-[var(--foreground)] font-medium">{phoneResult.contactName?.split(' ')[0] || 'there'}</span>, we couldn&apos;t find an appointment with{' '}
+              <h2 className="text-2xl font-bold text-center mb-2" style={{ fontFamily: "'Outfit', sans-serif" }}>No Upcoming Appointments</h2>
+              <p className="text-[var(--muted)] text-center text-lg mb-2">
+                Hi <span className="text-[var(--foreground)] font-medium">{phoneResult.contactName?.split(' ')[0] || 'there'}</span>, we don&apos;t see any upcoming appointments with{' '}
                 <span className="text-[var(--accent)] font-medium">{selectedBarber.name.split(' ')[0]}</span>.
               </p>
+              {phoneResult.lastAppointment ? (
+                <p className="text-[var(--muted)] text-center text-base mb-8">
+                  Your last visit was <span className="text-[var(--foreground)] font-medium">{formatDateTimeLong(phoneResult.lastAppointment.startTime)}</span>
+                </p>
+              ) : (
+                <p className="text-[var(--muted)] text-center text-base mb-8">
+                  No recent visits found.
+                </p>
+              )}
               <div className="w-full space-y-3">
-                <button onClick={handleWrongDayCheckIn} className="kiosk-btn kiosk-btn-primary w-full text-lg">Alert {selectedBarber.name.split(' ')[0]} Anyway</button>
-                <button onClick={() => { setStep('phone'); setPhoneInput(''); setError(''); }} className="kiosk-btn kiosk-btn-secondary w-full text-lg">Try a Different Number</button>
+                <button onClick={handleWrongDayCheckIn} className="kiosk-btn kiosk-btn-primary w-full text-lg">Notify {selectedBarber.name.split(' ')[0]} Anyway</button>
+                <button onClick={resetToHome} className="kiosk-btn kiosk-btn-secondary w-full text-lg">Back to Home</button>
               </div>
             </>
           )}

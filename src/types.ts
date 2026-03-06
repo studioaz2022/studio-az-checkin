@@ -64,6 +64,10 @@ export interface PhoneLookupResponse extends ApiResponse {
   };
   contactId?: string;
   contactName?: string;
+  lastAppointment?: {
+    startTime: string;
+    endTime: string;
+  };
 }
 
 export interface CheckInRequest {
