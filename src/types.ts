@@ -15,7 +15,7 @@ export interface TattooArtist {
   calendarId: string;
 }
 
-export type ServiceType = 'haircut' | 'haircut_beard';
+export type ServiceType = 'haircut' | 'haircut_beard' | 'beard_trim';
 
 export type SlotTier = 'now' | '5-10' | '10-20' | 'later';
 

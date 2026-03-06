@@ -1,22 +1,21 @@
 'use client';
 
-import { useEffect, Suspense } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useEffect } from 'react';
+import { useScreen } from '@/context/ScreenContext';
 import { LOGO_WHITE } from '@/lib/constants';
 
-function ConfirmationContent() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const name = searchParams.get('name') || 'Guest';
-  const provider = searchParams.get('provider') || '';
-  const booked = searchParams.get('booked') === 'true';
+export default function ConfirmationScreen() {
+  const { data, resetToHome } = useScreen();
+  const name = data.name || 'Guest';
+  const provider = data.provider || '';
+  const booked = data.booked === true;
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      router.push('/');
+      resetToHome();
     }, 5000);
     return () => clearTimeout(timer);
-  }, [router]);
+  }, [resetToHome]);
 
   return (
     <div className="h-full flex flex-col items-center justify-center px-8">
@@ -67,13 +66,5 @@ function ConfirmationContent() {
         </div>
       </div>
     </div>
-  );
-}
-
-export default function ConfirmationPage() {
-  return (
-    <Suspense fallback={<div className="h-full" />}>
-      <ConfirmationContent />
-    </Suspense>
   );
 }

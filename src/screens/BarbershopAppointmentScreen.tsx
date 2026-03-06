@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
+import { useScreen } from '@/context/ScreenContext';
 import BackButton from '@/components/BackButton';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import { BARBERS } from '@/lib/constants';
@@ -51,8 +51,8 @@ type Step =
   | 'name_fallback' // enter name manually (last resort)
   | 'submitting';   // API call in progress
 
-export default function AppointmentCheckInPage() {
-  const router = useRouter();
+export default function BarbershopAppointmentScreen() {
+  const { navigate, resetToHome, goBack } = useScreen();
   const carouselRef = useRef<HTMLDivElement>(null);
 
   const [step, setStep] = useState<Step>('select');
@@ -184,24 +184,22 @@ export default function AppointmentCheckInPage() {
     const target = headerPhotoRef.current?.getBoundingClientRect();
     if (!target) return;
 
-    const startLeft = photoRect.left;
-    const startTop = photoRect.top;
-    const startSize = photoRect.width;
-    const endLeft = target.left;
-    const endTop = target.top;
-    const endSize = target.width;
+    // Pin overlay at start position using fixed positioning
+    el.style.left = `${photoRect.left}px`;
+    el.style.top = `${photoRect.top}px`;
+    el.style.width = `${photoRect.width}px`;
+    el.style.height = `${photoRect.width}px`;
 
-    // Set element to start position immediately
-    el.style.left = `${startLeft}px`;
-    el.style.top = `${startTop}px`;
-    el.style.width = `${startSize}px`;
-    el.style.height = `${startSize}px`;
+    // Calculate translation and scale deltas (GPU-only properties)
+    const dx = (target.left + target.width / 2) - (photoRect.left + photoRect.width / 2);
+    const dy = (target.top + target.height / 2) - (photoRect.top + photoRect.width / 2);
+    const scale = target.width / photoRect.width;
 
-    // Use WAAPI to animate — this is frame-perfect, no React state timing issues
+    // Use WAAPI with transform — runs on compositor thread, no layout recalc
     const anim = el.animate(
       [
-        { left: `${startLeft}px`, top: `${startTop}px`, width: `${startSize}px`, height: `${startSize}px` },
-        { left: `${endLeft}px`, top: `${endTop}px`, width: `${endSize}px`, height: `${endSize}px` },
+        { transform: 'translate(0, 0) scale(1)' },
+        { transform: `translate(${dx}px, ${dy}px) scale(${scale})` },
       ],
       {
         duration: 550,
@@ -298,11 +296,10 @@ export default function AppointmentCheckInPage() {
         appointmentId: selectedAppt.id,
         contactId: selectedAppt.contactId || undefined,
       });
-      const params = new URLSearchParams({
+      navigate('confirmation', {
         name: selectedAppt.contactName.split(' ')[0],
         provider: selectedBarber.name.split(' ')[0],
       });
-      router.push(`/confirmation?${params.toString()}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Check-in failed');
       setStep('appointments');
@@ -324,11 +321,10 @@ export default function AppointmentCheckInPage() {
           appointmentId: result.appointment.id,
           contactId: result.appointment.contactId,
         });
-        const params = new URLSearchParams({
+        navigate('confirmation', {
           name: result.appointment.contactName.split(' ')[0],
           provider: selectedBarber.name.split(' ')[0],
         });
-        router.push(`/confirmation?${params.toString()}`);
         return;
       }
       setPhoneResult({
@@ -357,11 +353,10 @@ export default function AppointmentCheckInPage() {
         type: 'name_only',
         contactId: phoneResult?.contactId || undefined,
       });
-      const params = new URLSearchParams({
+      navigate('confirmation', {
         name: fallbackName.trim(),
         provider: selectedBarber.name.split(' ')[0],
       });
-      router.push(`/confirmation?${params.toString()}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Check-in failed');
       setStep('name_fallback');
@@ -380,11 +375,10 @@ export default function AppointmentCheckInPage() {
         type: 'name_only',
         contactId: phoneResult?.contactId,
       });
-      const params = new URLSearchParams({
+      navigate('confirmation', {
         name: name.split(' ')[0],
         provider: selectedBarber.name.split(' ')[0],
       });
-      router.push(`/confirmation?${params.toString()}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Check-in failed');
       setStep('phone_result');
@@ -404,7 +398,8 @@ export default function AppointmentCheckInPage() {
     return {
       transform: `translate(${xBase}px, ${yOffset}px) rotate(${rotation}deg) scale(0.2)`,
       opacity: 0,
-      transition: `all 0.45s cubic-bezier(0.55, 0.06, 0.68, 0.19) ${distance * 25}ms`,
+      transition: `transform 0.45s cubic-bezier(0.55, 0.06, 0.68, 0.19) ${distance * 25}ms, opacity 0.45s cubic-bezier(0.55, 0.06, 0.68, 0.19) ${distance * 25}ms`,
+      willChange: 'transform, opacity',
     };
   }
 
@@ -429,8 +424,8 @@ export default function AppointmentCheckInPage() {
 
   return (
     <div className="h-full flex flex-col items-center relative">
-      <BackButton href={step === 'select' ? '/barbershop' : undefined} onClick={
-        step !== 'select' && step !== 'selecting' ? () => {
+      <BackButton onClick={
+        step === 'select' ? goBack : step !== 'selecting' ? () => {
           if (step === 'phone') {
             setStep('appointments');
             setPhoneInput('');
@@ -529,12 +524,14 @@ export default function AppointmentCheckInPage() {
                     transform: 'scale(1.15) translateY(-8px)',
                     zIndex: 50,
                     transition: 'transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1)',
+                    willChange: 'transform',
                   };
                 } else if (animPhase === 'scatter') {
                   // Hold at pop position while others fly away
                   animStyle = {
                     transform: 'scale(1.15) translateY(-8px)',
                     zIndex: 50,
+                    willChange: 'transform',
                   };
                 } else if (animPhase === 'settle' || animPhase === 'done') {
                   // Instantly hidden — visibility:hidden is not affected by CSS transitions
@@ -550,7 +547,8 @@ export default function AppointmentCheckInPage() {
                   animStyle = {
                     transform: 'scale(0.95)',
                     opacity: 0.6,
-                    transition: 'all 0.2s ease-out',
+                    transition: 'transform 0.2s ease-out, opacity 0.2s ease-out',
+                    willChange: 'transform, opacity',
                   };
                 } else {
                   animStyle = getScatterStyle(idx);
@@ -894,7 +892,7 @@ export default function AppointmentCheckInPage() {
               <p className="text-[var(--foreground)] text-center text-xl font-semibold mb-8">{formatDateTimeLong(phoneResult.appointmentDate)}</p>
               <div className="w-full space-y-3">
                 <button onClick={handleWrongDayCheckIn} className="kiosk-btn kiosk-btn-primary w-full text-lg">Alert {selectedBarber.name.split(' ')[0]} Anyway</button>
-                <button onClick={() => router.push('/')} className="kiosk-btn kiosk-btn-secondary w-full text-lg">Back to Home</button>
+                <button onClick={resetToHome} className="kiosk-btn kiosk-btn-secondary w-full text-lg">Back to Home</button>
               </div>
             </>
           )}
@@ -992,6 +990,7 @@ export default function AppointmentCheckInPage() {
               height: rect.height,
               zIndex: 100,
               pointerEvents: 'none',
+              willChange: 'transform',
             }}
           >
             <img

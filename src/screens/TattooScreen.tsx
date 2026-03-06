@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
+import { useScreen } from '@/context/ScreenContext';
 import BackButton from '@/components/BackButton';
 import ArtistCard from '@/components/ArtistCard';
 import LoadingSpinner from '@/components/LoadingSpinner';
@@ -25,8 +25,8 @@ type Step =
   | 'name_fallback' // "I don't see my appointment" — enter name
   | 'submitting';   // API call in progress
 
-export default function TattooCheckInPage() {
-  const router = useRouter();
+export default function TattooScreen() {
+  const { navigate, goBack } = useScreen();
   const carouselRef = useRef<HTMLDivElement>(null);
 
   const [step, setStep] = useState<Step>('select');
@@ -129,7 +129,7 @@ export default function TattooCheckInPage() {
     }
   }, [step, animPhase, selectedArtistIdx]);
 
-  // ── WAAPI fly animation ──
+  // ── WAAPI fly animation (GPU-composited: transform + opacity only) ──
   useEffect(() => {
     if (settlePhase !== 'flying') return;
     const el = overlayRef.current;
@@ -139,26 +139,24 @@ export default function TattooCheckInPage() {
     const target = headerPhotoRef.current?.getBoundingClientRect();
     if (!target) return;
 
-    const startLeft = cardRect.left;
-    const startTop = cardRect.top;
-    const startWidth = cardRect.width;
-    const startHeight = cardRect.height;
-    const endLeft = target.left;
-    const endTop = target.top;
-    const endWidth = target.width;
-    const endHeight = target.height;
+    // Pin overlay at start position using fixed positioning
+    el.style.left = `${cardRect.left}px`;
+    el.style.top = `${cardRect.top}px`;
+    el.style.width = `${cardRect.width}px`;
+    el.style.height = `${cardRect.height}px`;
 
-    el.style.left = `${startLeft}px`;
-    el.style.top = `${startTop}px`;
-    el.style.width = `${startWidth}px`;
-    el.style.height = `${startHeight}px`;
+    // Calculate translation and scale deltas (GPU-only properties)
+    const dx = (target.left + target.width / 2) - (cardRect.left + cardRect.width / 2);
+    const dy = (target.top + target.height / 2) - (cardRect.top + cardRect.height / 2);
+    const scaleX = target.width / cardRect.width;
+    const scaleY = target.height / cardRect.height;
 
     const anim = el.animate(
       [
-        { left: `${startLeft}px`, top: `${startTop}px`, width: `${startWidth}px`, height: `${startHeight}px`, borderRadius: '22px', opacity: 1 },
-        { left: `${endLeft}px`, top: `${endTop}px`, width: `${endWidth}px`, height: `${endHeight}px`, borderRadius: '50%', opacity: 1 },
+        { transform: 'translate(0, 0) scale(1)', borderRadius: '22px' },
+        { transform: `translate(${dx}px, ${dy}px) scale(${scaleX}, ${scaleY})`, borderRadius: '50%' },
       ],
-      { duration: 550, easing: 'cubic-bezier(0.22, 1, 0.36, 1)', fill: 'forwards' }
+      { duration: 500, easing: 'cubic-bezier(0.22, 1, 0.36, 1)', fill: 'forwards' }
     );
 
     anim.onfinish = () => setSettlePhase('arrived');
@@ -246,11 +244,10 @@ export default function TattooCheckInPage() {
         appointmentId: selectedAppt.id,
         contactId: selectedAppt.contactId || undefined,
       });
-      const params = new URLSearchParams({
+      navigate('confirmation', {
         name: selectedAppt.contactName.split(' ')[0],
         provider: selectedArtist.name.split(' ')[0],
       });
-      router.push(`/confirmation?${params.toString()}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Check-in failed');
       setStep('appointments');
@@ -268,11 +265,10 @@ export default function TattooCheckInPage() {
         location: 'tattoo',
         type: 'name_only',
       });
-      const params = new URLSearchParams({
+      navigate('confirmation', {
         name: fallbackName.trim(),
         provider: selectedArtist.name.split(' ')[0],
       });
-      router.push(`/confirmation?${params.toString()}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Check-in failed');
       setStep('name_fallback');
@@ -290,7 +286,8 @@ export default function TattooCheckInPage() {
     return {
       transform: `translate(${xBase}px, ${yOffset}px) rotate(${rotation}deg) scale(0.3)`,
       opacity: 0,
-      transition: 'all 0.45s cubic-bezier(0.55, 0.06, 0.68, 0.19)',
+      transition: 'transform 0.45s cubic-bezier(0.55, 0.06, 0.68, 0.19), opacity 0.45s cubic-bezier(0.55, 0.06, 0.68, 0.19)',
+      willChange: 'transform, opacity',
     };
   }
 
@@ -316,9 +313,8 @@ export default function TattooCheckInPage() {
   return (
     <div className="h-full flex flex-col items-center relative">
       <BackButton
-        href={step === 'select' ? '/' : undefined}
         onClick={
-          step !== 'select' && step !== 'selecting' ? () => {
+          step === 'select' ? goBack : step !== 'selecting' ? () => {
             if (step === 'name_fallback') {
               setStep('appointments');
               setFallbackName('');
@@ -410,11 +406,13 @@ export default function TattooCheckInPage() {
                     transform: 'scale(1.08)',
                     zIndex: 50,
                     transition: 'transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1)',
+                    willChange: 'transform',
                   };
                 } else if (animPhase === 'scatter') {
                   animStyle = {
                     transform: 'scale(1.08)',
                     zIndex: 50,
+                    willChange: 'transform',
                   };
                 } else if (animPhase === 'settle' || animPhase === 'done') {
                   animStyle = {
@@ -429,7 +427,8 @@ export default function TattooCheckInPage() {
                   animStyle = {
                     transform: 'scale(0.95)',
                     opacity: 0.5,
-                    transition: 'all 0.2s ease-out',
+                    transition: 'transform 0.2s ease-out, opacity 0.2s ease-out',
+                    willChange: 'transform, opacity',
                   };
                 } else {
                   animStyle = getScatterStyle(idx);
@@ -742,6 +741,7 @@ export default function TattooCheckInPage() {
               borderRadius: 22,
               overflow: 'hidden',
               border: '3px solid #c9a54e',
+              willChange: 'transform',
             }}
           >
             <img

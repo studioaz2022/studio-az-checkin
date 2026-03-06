@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef, Suspense } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { useScreen } from '@/context/ScreenContext';
 import BackButton from '@/components/BackButton';
 import BarberAvailabilityCard, { TierPanel } from '@/components/BarberAvailabilityCard';
 import LoadingSpinner from '@/components/LoadingSpinner';
@@ -22,10 +22,9 @@ function toE164(formatted: string): string {
 
 type Step = 'loading' | 'barbers' | 'details' | 'booking';
 
-function AvailabilityContent() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const service = (searchParams.get('service') || 'haircut') as ServiceType;
+export default function WalkInAvailabilityScreen() {
+  const { navigate, goBack, resetToHome, data: screenData } = useScreen();
+  const service = (screenData.service || 'haircut') as ServiceType;
   const carouselRef = useRef<HTMLDivElement>(null);
 
   const [step, setStep] = useState<Step>('loading');
@@ -123,12 +122,11 @@ function AvailabilityContent() {
         customerPhone: toE164(customerPhone),
         service,
       });
-      const params = new URLSearchParams({
+      navigate('confirmation', {
         name: customerName.trim(),
         provider: selectedBarber.barberName.split(' ')[0],
-        booked: 'true',
+        booked: true,
       });
-      router.push(`/confirmation?${params.toString()}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Booking failed');
       setStep('details');
@@ -155,7 +153,7 @@ function AvailabilityContent() {
 
   return (
     <div className="h-full flex flex-col relative">
-      <BackButton href="/barbershop/walk-in" />
+      <BackButton onClick={goBack} />
 
       {/* Header */}
       <div className="text-center pt-20 pb-2 px-6 animate-fade-up">
@@ -240,7 +238,7 @@ function AvailabilityContent() {
                   </button>
                 )}
                 <button
-                  onClick={() => router.push('/')}
+                  onClick={resetToHome}
                   className="kiosk-btn kiosk-btn-secondary w-full text-lg"
                 >
                   Back to Home
@@ -443,17 +441,5 @@ function AvailabilityContent() {
         </div>
       )}
     </div>
-  );
-}
-
-export default function WalkInAvailabilityPage() {
-  return (
-    <Suspense fallback={
-      <div className="h-full flex items-center justify-center">
-        <LoadingSpinner text="Loading..." />
-      </div>
-    }>
-      <AvailabilityContent />
-    </Suspense>
   );
 }

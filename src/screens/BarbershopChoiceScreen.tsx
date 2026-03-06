@@ -1,14 +1,14 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
+import { useScreen } from '@/context/ScreenContext';
 import BackButton from '@/components/BackButton';
 
-export default function BarbershopChoicePage() {
-  const router = useRouter();
+export default function BarbershopChoiceScreen() {
+  const { navigate, goBack } = useScreen();
 
   return (
     <div className="h-full flex flex-col items-center justify-center px-8 relative">
-      <BackButton href="/" />
+      <BackButton onClick={goBack} />
 
       <div className="text-center mb-14 animate-fade-up">
         <h1 className="text-4xl font-bold tracking-tight mb-3" style={{ fontFamily: "'Outfit', sans-serif" }}>
@@ -22,7 +22,7 @@ export default function BarbershopChoicePage() {
 
       <div className="flex flex-col gap-5 w-full max-w-lg stagger-children">
         <button
-          onClick={() => router.push('/barbershop/appointment')}
+          onClick={() => navigate('barbershop_appointment')}
           className="kiosk-btn kiosk-btn-primary text-xl"
         >
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-3 opacity-80">
@@ -36,7 +36,7 @@ export default function BarbershopChoicePage() {
         </button>
 
         <button
-          onClick={() => router.push('/barbershop/walk-in')}
+          onClick={() => navigate('walk_in_service')}
           className="kiosk-btn kiosk-btn-secondary text-xl"
         >
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-3 opacity-60">

@@ -1,18 +1,17 @@
 'use client';
 
-import { useRouter, usePathname } from 'next/navigation';
 import { useCallback } from 'react';
+import { useScreen } from '@/context/ScreenContext';
 import { useInactivityTimer } from '@/hooks/useInactivityTimer';
 
 export default function InactivityGuard({ children }: { children: React.ReactNode }) {
-  const router = useRouter();
-  const pathname = usePathname();
+  const { screen, resetToHome } = useScreen();
 
   const handleTimeout = useCallback(() => {
-    if (pathname !== '/') {
-      router.push('/');
+    if (screen !== 'welcome') {
+      resetToHome();
     }
-  }, [pathname, router]);
+  }, [screen, resetToHome]);
 
   useInactivityTimer(60000, handleTimeout);
 

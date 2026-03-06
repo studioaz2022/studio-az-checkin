@@ -15,7 +15,7 @@ async function post<T extends ApiResponse>(path: string, body: object): Promise<
 }
 
 async function get<T extends ApiResponse>(path: string): Promise<T> {
-  const res = await fetch(`${BACKEND_URL}${path}`);
+  const res = await fetch(`${BACKEND_URL}${path}`, { cache: 'no-store' });
   const data = await res.json();
   if (!res.ok || !data.success) {
     throw new Error(data.error || 'Request failed');

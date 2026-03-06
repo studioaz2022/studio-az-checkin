@@ -18,10 +18,11 @@ export default function ArtistCard({ name, photoUrl, selected, onSelect }: Artis
     >
       {/* Outer glow ring when selected */}
       <div
-        className="absolute -inset-[3px] rounded-[24px] transition-opacity duration-500"
+        className="absolute -inset-[3px] rounded-[24px]"
         style={{
           opacity: selected ? 1 : 0,
           background: 'linear-gradient(135deg, #c9a54e, #dbb85c, #b8923a, #c9a54e)',
+          transition: 'opacity 0.3s ease-out',
         }}
       />
 
@@ -34,7 +35,7 @@ export default function ArtistCard({ name, photoUrl, selected, onSelect }: Artis
         <img
           src={photoUrl}
           alt={name}
-          className="absolute bottom-0 left-0 w-full object-contain transition-transform duration-700 ease-out group-active:scale-[1.03]"
+          className="absolute bottom-0 left-0 w-full object-contain group-active:scale-[1.03]"
           style={{ maxHeight: '88%' }}
           draggable={false}
         />
