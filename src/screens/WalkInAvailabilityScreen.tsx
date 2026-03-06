@@ -6,6 +6,7 @@ import BackButton from '@/components/BackButton';
 import BarberAvailabilityCard, { TierPanel } from '@/components/BarberAvailabilityCard';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import { getWalkInSlots, bookWalkIn } from '@/lib/api';
+import { useKeyboardAware } from '@/hooks/useKeyboardAware';
 import type { BarberAvailability, TieredSlot, ServiceType } from '@/types';
 
 function formatPhone(value: string): string {
@@ -24,6 +25,7 @@ type Step = 'loading' | 'barbers' | 'details' | 'booking';
 
 export default function WalkInAvailabilityScreen() {
   const { navigate, goBack, resetToHome, data: screenData } = useScreen();
+  const { keyboardStyle } = useKeyboardAware();
   const service = (screenData.service || 'haircut') as ServiceType;
   const carouselRef = useRef<HTMLDivElement>(null);
 
@@ -391,7 +393,7 @@ export default function WalkInAvailabilityScreen() {
       )}
 
       {step === 'details' && (
-        <div className="flex-1 flex flex-col items-center justify-center w-full max-w-lg mx-auto px-6 animate-scale-in">
+        <div className="flex-1 flex flex-col items-center justify-center w-full max-w-lg mx-auto px-6 animate-scale-in" style={keyboardStyle}>
           <div className="w-full space-y-5">
             <input
               type="text"
