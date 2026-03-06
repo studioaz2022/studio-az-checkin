@@ -1,46 +1,78 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useRef } from 'react';
 
 /**
- * Detects when the iPad on-screen keyboard is open by monitoring
- * window.visualViewport height changes. Returns the keyboard height
- * so containers can shift up to keep inputs visible.
+ * Detects when an input is focused on iPad and the on-screen keyboard
+ * will cover the lower half of the screen. Uses focusin/focusout events
+ * for immediate detection, supplemented by visualViewport for accurate
+ * keyboard height measurement.
+ *
+ * Returns a style object that shifts the form container upward so inputs
+ * stay visible above the keyboard.
  */
 export function useKeyboardAware() {
+  const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
-
-  const handleResize = useCallback(() => {
-    const vv = window.visualViewport;
-    if (!vv) return;
-
-    // The difference between the layout viewport and the visual viewport
-    // tells us how much space the keyboard is consuming
-    const diff = window.innerHeight - vv.height;
-
-    // Only treat it as keyboard if the difference is significant (>100px)
-    // to avoid false positives from address bar changes
-    setKeyboardHeight(diff > 100 ? diff : 0);
-  }, []);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
+    function handleFocusIn(e: FocusEvent) {
+      const target = e.target as HTMLElement;
+      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT') {
+        setIsKeyboardOpen(true);
+      }
+    }
+
+    function handleFocusOut() {
+      // Small delay to avoid flicker when switching between inputs
+      if (timerRef.current) clearTimeout(timerRef.current);
+      timerRef.current = setTimeout(() => {
+        setIsKeyboardOpen(false);
+        setKeyboardHeight(0);
+      }, 100);
+    }
+
+    function handleViewportResize() {
+      const vv = window.visualViewport;
+      if (!vv) return;
+      const diff = window.innerHeight - vv.height;
+      if (diff > 100) {
+        setKeyboardHeight(diff);
+        setIsKeyboardOpen(true);
+        // Cancel any pending focusout close
+        if (timerRef.current) clearTimeout(timerRef.current);
+      }
+    }
+
+    document.addEventListener('focusin', handleFocusIn);
+    document.addEventListener('focusout', handleFocusOut);
+
     const vv = window.visualViewport;
-    if (!vv) return;
+    if (vv) {
+      vv.addEventListener('resize', handleViewportResize);
+    }
 
-    vv.addEventListener('resize', handleResize);
-    return () => vv.removeEventListener('resize', handleResize);
-  }, [handleResize]);
+    return () => {
+      document.removeEventListener('focusin', handleFocusIn);
+      document.removeEventListener('focusout', handleFocusOut);
+      if (vv) vv.removeEventListener('resize', handleViewportResize);
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, []);
 
-  const isKeyboardOpen = keyboardHeight > 0;
-
-  // Style to apply on the form container — shifts content up when keyboard is open
+  // Style to apply on the form container:
+  // - Switch from center to top alignment
+  // - Add padding so content sits in the upper portion of the screen
   const keyboardStyle: React.CSSProperties = isKeyboardOpen
     ? {
         justifyContent: 'flex-start',
-        paddingTop: '10vh',
-        transition: 'padding-top 0.25s ease-out, justify-content 0s',
+        paddingTop: 'min(10vh, 80px)',
+        transition: 'padding-top 0.3s ease-out',
       }
-    : {};
+    : {
+        transition: 'padding-top 0.3s ease-out',
+      };
 
   return { isKeyboardOpen, keyboardHeight, keyboardStyle };
 }
