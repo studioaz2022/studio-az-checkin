@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import { ScreenProvider } from '@/context/ScreenContext';
 import InactivityGuard from '@/components/InactivityGuard';
+import OfflineGuard from '@/components/OfflineGuard';
 import CircuitBackground from '@/components/CircuitBackground';
 
 export const metadata: Metadata = {
@@ -50,13 +51,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         {/* Animated circuit board background */}
         <CircuitBackground />
 
-        <ScreenProvider>
-          <InactivityGuard>
-            <main className="h-full relative z-10">
-              {children}
-            </main>
-          </InactivityGuard>
-        </ScreenProvider>
+        <OfflineGuard>
+          <ScreenProvider>
+            <InactivityGuard>
+              <main className="h-full relative z-10">
+                {children}
+              </main>
+            </InactivityGuard>
+          </ScreenProvider>
+        </OfflineGuard>
       </body>
     </html>
   );
