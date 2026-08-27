@@ -40,7 +40,13 @@ export async function getTattooAppointments(ghlUserId: string): Promise<Appointm
 }
 
 export async function getWalkInSlots(service: ServiceType, days = 0): Promise<BarberSlotsResponse> {
-  return get(`/api/kiosk/walk-in-slots?service=${service}&days=${days}`);
+  // v2: availability sourced from GHL getSlots on the dedicated WalkIn calendars
+  // (5-min interval, 0 notice, real per-service schedules). Every returned slot
+  // is one GHL will accept, so bookings no longer fail with "slot unavailable".
+  // The test/preview site sets NEXT_PUBLIC_SHOW_TEST_BARBER=1 to surface the
+  // test-only barber; the live kiosk leaves it unset so real clients never see it.
+  const includeTest = process.env.NEXT_PUBLIC_SHOW_TEST_BARBER === '1' ? '&includeTest=1' : '';
+  return get(`/api/kiosk/walk-in-slots-v2?service=${service}&days=${days}${includeTest}`);
 }
 
 export async function bookWalkIn(request: WalkInBookRequest): Promise<BookResponse> {

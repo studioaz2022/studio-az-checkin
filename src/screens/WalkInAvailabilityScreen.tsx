@@ -104,15 +104,11 @@ export default function WalkInAvailabilityScreen() {
     setStep('booking');
     setError('');
 
-    let bookStartTime = selectedSlot.startTime;
-    let bookEndTime = selectedSlot.endTime;
-    if (selectedSlot.tier === 'now') {
-      const now = new Date();
-      const end = new Date(now);
-      end.setMinutes(end.getMinutes() + selectedBarber.slotDuration);
-      bookStartTime = now.toISOString();
-      bookEndTime = end.toISOString();
-    }
+    // Book the exact slot GHL returned. (The WalkIn calendars have 0 booking
+    // notice, so the soonest slot — the next 5-min mark — is already bookable.
+    // The old "override to exact now" produced an off-grid time GHL rejected.)
+    const bookStartTime = selectedSlot.startTime;
+    const bookEndTime = selectedSlot.endTime;
 
     try {
       await bookWalkIn({
@@ -151,7 +147,7 @@ export default function WalkInAvailabilityScreen() {
     );
   }
 
-  const serviceLabel = service === 'haircut' ? 'Haircut' : 'Haircut + Beard';
+  const serviceLabel = service === 'haircut' ? 'Haircut' : service === 'beard_trim' ? 'Beard Trim' : 'Haircut + Beard';
 
   return (
     <div className="h-full flex flex-col relative">
